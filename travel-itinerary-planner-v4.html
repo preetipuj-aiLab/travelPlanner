@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Travel Itinerary Planner — AI Agent</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      color: #1a1a1a;
+    }
+    .container { max-width: 720px; margin: 0 auto; }
+    .header { text-align: center; margin-bottom: 2rem; }
+    .header h1 { font-size: 26px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; }
+    .header p { font-size: 15px; color: #666; }
+    .badge { display: inline-block; font-size: 11px; padding: 3px 12px; background: #e8f0fe; color: #1a56db; border-radius: 20px; font-weight: 500; margin-bottom: 12px; }
+    .card { background: #fff; border-radius: 14px; border: 1px solid #e5e5e5; padding: 1.5rem; margin-bottom: 1rem; }
+    .section-label { font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+    .row { display: grid; gap: 12px; margin-bottom: 16px; }
+    .row-2 { grid-template-columns: 1fr 1fr; }
+    .row-3 { grid-template-columns: 1fr 1fr 1fr; }
+    input[type="text"], select, textarea {
+      width: 100%; padding: 9px 12px; border: 1px solid #ddd;
+      border-radius: 8px; font-size: 14px; color: #1a1a1a;
+      background: #fff; outline: none; transition: border 0.15s;
+    }
+    input[type="text"]:focus, select:focus, textarea:focus { border-color: #1a56db; }
+    textarea { resize: vertical; min-height: 72px; font-family: inherit; }
+    .tag-group { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag {
+      font-size: 13px; padding: 6px 14px; border-radius: 20px;
+      border: 1px solid #ddd; cursor: pointer; color: #666;
+      background: #fff; user-select: none; transition: all 0.15s;
+    }
+    .tag:hover { border-color: #1a56db; color: #1a56db; }
+    .tag.selected { background: #e8f0fe; color: #1a56db; border-color: #1a56db; font-weight: 500; }
+    .generate-btn {
+      width: 100%; padding: 13px; font-size: 15px; font-weight: 600;
+      border-radius: 10px; border: none; background: #1a56db;
+      color: #fff; cursor: pointer; margin-top: 4px; transition: background 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .generate-btn:hover { background: #1447b4; }
+    .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .agent-status {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px; background: #f0f4ff; border-radius: 10px;
+      margin-bottom: 16px; font-size: 13px; color: #444;
+    }
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid #c7d4f5;
+      border-top-color: #1a56db; border-radius: 50%;
+      animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .summary-card { background: #f8f9fa; border-radius: 10px; padding: 12px 14px; }
+    .summary-label { font-size: 11px; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .summary-value { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+    .itinerary-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1.2rem 1.4rem; margin-bottom: 12px; }
+    .day-header { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+    .day-badge { font-size: 11px; padding: 3px 12px; border-radius: 20px; background: #e8f0fe; color: #1a56db; font-weight: 600; }
+    .activity { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; align-items: flex-start; }
+    .activity:last-child { border-bottom: none; padding-bottom: 0; }
+    .time-slot { font-size: 12px; color: #888; min-width: 75px; padding-top: 2px; }
+    .act-icon { font-size: 16px; color: #1a56db; flex-shrink: 0; margin-top: 1px; }
+    .activity-name { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+    .activity-desc { font-size: 13px; color: #555; margin-top: 3px; line-height: 1.55; }
+    .tips-card { background: #fffbea; border: 1px solid #f5d84e; border-radius: 10px; padding: 14px 16px; margin-top: 8px; }
+    .tips-title { font-size: 13px; font-weight: 600; color: #92630a; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .tips-list { font-size: 13px; color: #7a5210; line-height: 1.8; }
+    .dining-card { background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+    .dining-title { font-size: 13px; font-weight: 600; color: #166534; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .dining-text { font-size: 13px; color: #15803d; line-height: 1.6; }
+    .error-box { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px; padding: 14px 16px; color: #b91c1c; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .result-section { margin-top: 24px; }
+    .overview-text { font-size: 14px; color: #555; line-height: 1.65; margin-bottom: 20px; }
+    .powered-by { text-align: center; font-size: 12px; color: #aaa; margin-top: 2rem; }
+    @media (max-width: 600px) {
+      .row-2, .row-3 { grid-template-columns: 1fr; }
+      body { padding: 1rem 0.75rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span class="badge">AI-Powered</span>
+      <h1>Travel Itinerary Planner</h1>
+      <p>Tell us your preferences and get a personalized day-by-day itinerary</p>
+    </div>
+
+    <div class="card">
+      <div class="row row-2">
+        <div>
+          <div class="section-label">Destination</div>
+          <input type="text" id="destination" placeholder="e.g. Kyoto, Japan" />
+        </div>
+        <div>
+          <div class="section-label">Number of days</div>
+          <select id="days">
+            <option value="2">2 days</option>
+            <option value="3" selected>3 days</option>
+            <option value="5">5 days</option>
+            <option value="7">7 days</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row row-3">
+        <div>
+          <div class="section-label">Travel month</div>
+          <select id="month">
+            <option>January</option><option>February</option><option>March</option>
+            <option>April</option><option>May</option><option>June</option>
+            <option selected>July</option><option>August</option><option>September</option>
+            <option>October</option><option>November</option><option>December</option>
+          </select>
+        </div>
+        <div>
+          <div class="section-label">Budget</div>
+          <select id="budget">
+            <option value="budget">Budget — under $100/day</option>
+            <option value="mid" selected>Mid-range — $100–$300/day</option>
+            <option value="luxury">Luxury — $300+/day</option>
+          </select>
+        </div>
+        <div>
+          <div class="section-label">Travelling as</div>
+          <select id="group">
+            <option value="solo">Solo</option>
+            <option value="couple" selected>Couple</option>
+            <option value="family">Family with kids</option>
+            <option value="friends">Group of friends</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div class="section-label">Dietary preferences</div>
+        <div class="tag-group" id="diet-tags">
+          <span class="tag" data-val="vegetarian">Vegetarian</span>
+          <span class="tag" data-val="vegan">Vegan</span>
+          <span class="tag" data-val="gluten-free">Gluten-free</span>
+          <span class="tag" data-val="halal">Halal</span>
+          <span class="tag" data-val="no restriction">No restriction</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div class="section-label">Interests</div>
+        <div class="tag-group" id="interest-tags">
+          <span class="tag" data-val="culture and history">Culture & history</span>
+          <span class="tag" data-val="nature and hiking">Nature & hiking</span>
+          <span class="tag" data-val="food and dining">Food & dining</span>
+          <span class="tag" data-val="art and museums">Art & museums</span>
+          <span class="tag" data-val="shopping">Shopping</span>
+          <span class="tag" data-val="wellness and spas">Wellness & spas</span>
+          <span class="tag" data-val="photography">Photography</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <div class="section-label">Anything else? (optional)</div>
+        <textarea id="notes" placeholder="e.g. avoid tourist traps, prefer walking, off-the-beaten-path..."></textarea>
+      </div>
+
+      <button class="generate-btn" id="gen-btn" onclick="generateItinerary()">
+        <i class="ti ti-plane" aria-hidden="true"></i> Generate my itinerary
+      </button>
+    </div>
+
+    <div class="result-section" id="result-area" style="display:none;"></div>
+
+    <div class="powered-by">Powered by Claude AI (Anthropic) · Built by Preeti Pujni</div>
+  </div>
+
+  <script>
+    // ── Tag toggle ──────────────────────────────────────────────────────────
+    document.querySelectorAll('.tag').forEach(tag => {
+      tag.addEventListener('click', () => tag.classList.toggle('selected'));
+    });
+
+    function getSelected(groupId) {
+      return [...document.querySelectorAll('#' + groupId + ' .tag.selected')].map(t => t.dataset.val);
+    }
+
+    // ── Activity icon mapping (Tabler icons) ────────────────────────────────
+    function actIcon(type) {
+      const map = {
+        sightseeing: 'ti-camera',
+        food: 'ti-bowl-chopsticks',
+        nature: 'ti-trees',
+        culture: 'ti-building-bank',
+        shopping: 'ti-shopping-bag',
+        wellness: 'ti-heart'
+      };
+      return map[type] || 'ti-map-pin';
+    }
+
+    // ── Render itinerary HTML ───────────────────────────────────────────────
+    function renderItinerary(data, days) {
+      const resultArea = document.getElementById('result-area');
+      let html = '<div class="summary-grid">';
+      html += '<div class="summary-card"><div class="summary-label">Destination</div><div class="summary-value">' + (data.destination || '') + '</div></div>';
+      html += '<div class="summary-card"><div class="summary-label">Duration</div><div class="summary-value">' + days + ' days</div></div>';
+      html += '<div class="summary-card"><div class="summary-label">Est. daily cost</div><div class="summary-value">' + (data.estimated_daily_cost || 'Varies') + '</div></div>';
+      html += '<div class="summary-card"><div class="summary-label">Best area</div><div class="summary-value">' + ((data.best_area_to_stay || 'City center').split(' ').slice(0, 3).join(' ')) + '</div></div>';
+      html += '</div>';
+      html += '<p class="overview-text">' + (data.summary || '') + '</p>';
+
+      (data.days || []).forEach(function(day) {
+        html += '<div class="itinerary-card">';
+        html += '<div class="day-header"><span class="day-badge">Day ' + day.day + '</span>' + (day.theme || '') + '</div>';
+        (day.activities || []).forEach(function(act) {
+          html += '<div class="activity">';
+          html += '<div class="time-slot">' + (act.time || '') + '</div>';
+          html += '<i class="ti ' + actIcon(act.type) + ' act-icon" aria-hidden="true"></i>';
+          html += '<div>';
+          html += '<div class="activity-name">' + (act.name || '') + '</div>';
+          html += '<div class="activity-desc">' + (act.description || '') + '</div>';
+          html += '</div></div>';
+        });
+        html += '</div>';
+      });
+
+      if (data.dietary_recommendations) {
+        html += '<div class="dining-card">';
+        html += '<div class="dining-title"><i class="ti ti-salad" aria-hidden="true"></i> Dining tips</div>';
+        html += '<div class="dining-text">' + data.dietary_recommendations + '</div>';
+        html += '</div>';
+      }
+
+      if (data.insider_tips && data.insider_tips.length) {
+        html += '<div class="tips-card">';
+        html += '<div class="tips-title"><i class="ti ti-bulb" aria-hidden="true"></i> Insider tips</div>';
+        html += '<div class="tips-list">' + data.insider_tips.map(t => '• ' + t).join('<br>') + '</div>';
+        html += '</div>';
+      }
+
+      resultArea.style.display = 'block';
+      resultArea.innerHTML = html;
+    }
+
+    // ── Main generate function ──────────────────────────────────────────────
+    async function generateItinerary() {
+      const destination = document.getElementById('destination').value.trim();
+      if (!destination) { alert('Please enter a destination'); return; }
+
+      const days    = document.getElementById('days').value;
+      const month   = document.getElementById('month').value;
+      const budgetEl = document.getElementById('budget');
+      const budget  = budgetEl.options[budgetEl.selectedIndex].text;
+      const groupEl = document.getElementById('group');
+      const group   = groupEl.options[groupEl.selectedIndex].text;
+      const diet    = getSelected('diet-tags');
+      const interests = getSelected('interest-tags');
+      const notes   = document.getElementById('notes').value.trim();
+
+      const btn = document.getElementById('gen-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ti ti-loader-2" aria-hidden="true"></i> Planning your trip...';
+
+      const resultArea = document.getElementById('result-area');
+      resultArea.style.display = 'block';
+      resultArea.innerHTML = '<div class="agent-status"><div class="spinner"></div><span id="status-text">Researching ' + destination + '...</span></div>';
+
+      const statuses = [
+        'Analysing best areas to stay...',
+        'Curating experiences for you...',
+        'Finding dining options...',
+        'Building your daily schedule...'
+      ];
+      let si = 0;
+      const statusInterval = setInterval(() => {
+        si = (si + 1) % statuses.length;
+        const el = document.getElementById('status-text');
+        if (el) el.textContent = statuses[si];
+      }, 2200);
+
+      // ── Prompt (improved for quality + JSON validity) ──────────────────
+      const prompt = `You are an expert travel planner. Create a ${days}-day itinerary for ${destination} in ${month}.
+Group: ${group}. Budget: ${budget}. Dietary needs: ${diet.join(', ') || 'none'}. Interests: ${interests.join(', ') || 'general'}. Notes: ${notes || 'none'}.
+Return ONLY raw valid JSON — no markdown, no backticks, no commentary:
+{"destination":"","summary":"2-3 engaging sentences about the destination","estimated_daily_cost":"$X–Y USD","best_area_to_stay":"neighbourhood name + 1 sentence why","days":[{"day":1,"theme":"evocative theme title","activities":[{"time":"9:00 AM","name":"Place or activity name","description":"2 sentences with practical detail","type":"sightseeing|food|nature|culture|shopping|wellness"}]}],"insider_tips":["tip 1","tip 2","tip 3","tip 4"],"dietary_recommendations":"2-3 sentences tailored to the dietary needs specified"}
+Rules: exactly 4 activities per day, times spread across morning/afternoon/evening, vary activity types, be specific with real place names.`;
+
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': 'YOUR_API_KEY_HERE',   // ← replace with your key for standalone use
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 4000,           // ✅ FIX: was 1000, bumped to 4000 to prevent truncation
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+
+        clearInterval(statusInterval);
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error?.message || JSON.stringify(data));
+
+        // Collect all text blocks
+        let text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+
+        // Extract JSON safely
+        const match = text.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error('No valid JSON in response. Please try again.');
+
+        let parsed;
+        try {
+          parsed = JSON.parse(match[0]);
+        } catch(e) {
+          throw new Error('Response was cut off or malformed. Try fewer days or simplify your request.');
+        }
+
+        renderItinerary(parsed, days);
+
+      } catch (err) {
+        clearInterval(statusInterval);
+        resultArea.innerHTML = '<div class="error-box"><i class="ti ti-alert-triangle" aria-hidden="true"></i> ' + err.message + '</div>';
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-plane" aria-hidden="true"></i> Generate my itinerary';
+    }
+  </script>
+</body>
+</html>
